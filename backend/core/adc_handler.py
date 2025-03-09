@@ -35,7 +35,7 @@ class ADCHandler:
             
             # Initialize ADS1115
             print("Initializing ADS1115...")
-            self.ads = ADS.ADS1115(i2c)
+            self.ads = ADS.ADS1115(i2c, address=0x48)
             print("ADS1115 initialized successfully")
             
             # Create analog input objects for each channel
