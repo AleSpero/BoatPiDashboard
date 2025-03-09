@@ -62,7 +62,7 @@ def main():
                 f"{format_value('temperature', readings['temperature']):^11}"
             )
             
-            #print(output)
+            print(output)
             
             # Print raw voltages for debugging
             raw_values = {name: adc.read_raw(name) for name in adc.CHANNELS.keys()}
