@@ -48,7 +48,7 @@ def main():
             sys.stdout.write('\033[4F')
             
             # Get all sensor readings
-            #readings = adc.read_all()
+            readings = adc.read_all()
             
             # Format current time
             current_time = datetime.now().strftime("%H:%M:%S")

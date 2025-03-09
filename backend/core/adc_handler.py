@@ -8,9 +8,10 @@ import time
 class ADCHandler:
     # ADS1115 specifications
     MAX_VOLTAGE = 5.240  # Maximum voltage of ADS1115
+    MAX_VOLTAGE_FUEL_LEVEL = 2.77  # Maximum voltage of fuel level sensor
     
     # Conversion factors and calibration constants
-    FUEL_LEVEL_FACTOR = 100.0 / MAX_VOLTAGE  # Convert to percentage
+    FUEL_LEVEL_FACTOR = 100.0 / MAX_VOLTAGE_FUEL_LEVEL  # Convert to percentage
     BATTERY_VOLTAGE_DIVIDER = 2.44275  # Voltage divider ratio for 12.8V max input
     TEMPERATURE_FACTOR = 100.0  # Temperature conversion factor
     RPM_FACTOR = 1000.0  # RPM conversion factor
@@ -29,13 +30,10 @@ class ADCHandler:
             # Initialize I2C bus
             print("Setting up I2C bus...")
             i2c = busio.I2C(board.SCL, board.SDA)
-            if not i2c.try_lock():
-                raise RuntimeError("Could not lock I2C bus")
-            print("I2C bus initialized successfully")
             
             # Initialize ADS1115
             print("Initializing ADS1115...")
-            self.ads = ADS.ADS1115(i2c, address=0x48)
+            self.ads = ADS.ADS1115(i2c)
             print("ADS1115 initialized successfully")
             
             # Create analog input objects for each channel
