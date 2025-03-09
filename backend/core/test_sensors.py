@@ -5,11 +5,46 @@ import time
 from datetime import datetime
 import sys
 import signal
+from typing import Dict
+from collections import defaultdict
 
-def clear_line():
-    """Clear the current line in the terminal."""
-    sys.stdout.write('\033[K')  # Clear line
-    sys.stdout.write('\033[F')  # Move cursor up
+class SensorMonitor:
+    # Refresh intervals in seconds
+    REFRESH_RATES = {
+        'rpm': 0.1,        # 100ms - 10 times per second
+        'battery': 1.0,    # 1 second
+        'fuel_level': 2.0, # 2 seconds
+        'temperature': 2.0 # 2 seconds
+    }
+
+    def __init__(self):
+        self.adc = ADCHandler()
+        self.last_read = defaultdict(float)
+        self.values = defaultdict(float)
+
+    def should_update(self, sensor: str) -> bool:
+        """Check if it's time to update a specific sensor."""
+        current_time = time.time()
+        if current_time - self.last_read[sensor] >= self.REFRESH_RATES[sensor]:
+            self.last_read[sensor] = current_time
+            return True
+        return False
+
+    def update_sensors(self) -> Dict[str, float]:
+        """Update sensor values based on their refresh rates."""
+        if self.should_update('rpm'):
+            self.values['rpm'] = self.adc.read_rpm()
+        
+        if self.should_update('battery'):
+            self.values['battery'] = self.adc.read_battery_voltage()
+        
+        if self.should_update('fuel_level'):
+            self.values['fuel_level'] = self.adc.read_fuel_level()
+        
+        if self.should_update('temperature'):
+            self.values['temperature'] = self.adc.read_temperature()
+        
+        return dict(self.values)
 
 def format_value(name: str, value: float) -> str:
     """Format sensor values with appropriate units."""
@@ -32,9 +67,8 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     
     try:
-        adc = ADCHandler()
+        monitor = SensorMonitor()
         print("\nStarting sensor polling (Press Ctrl+C to exit)...\n")
-        print(adc.channels)
         
         # Print header
         print("Time       | Fuel Level | RPM    | Battery | Temperature")
@@ -48,7 +82,7 @@ def main():
             sys.stdout.write('\033[4F')
             
             # Get all sensor readings
-            readings = adc.read_all()
+            readings = monitor.update_sensors()
             
             # Format current time
             current_time = datetime.now().strftime("%H:%M:%S")
@@ -65,13 +99,14 @@ def main():
             print(output)
             
             # Print raw voltages for debugging
-            raw_values = {name: adc.read_raw(name) for name in adc.CHANNELS.keys()}
+            raw_values = {name: monitor.adc.read_raw(name) for name in monitor.adc.CHANNELS.keys()}
             print(f"Raw voltages: " + " | ".join(f"{k}: {v:.3f}V" for k, v in raw_values.items()))
             
             # Add empty lines to maintain consistent display
             print("\n" * 2)
             
-            time.sleep(1)  # Update every second
+            # Sleep for the shortest refresh interval
+            time.sleep(min(monitor.REFRESH_RATES.values()))
             
     except Exception as e:
         print(f"\nError: {str(e)}")
