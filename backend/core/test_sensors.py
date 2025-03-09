@@ -34,6 +34,7 @@ def main():
     try:
         adc = ADCHandler()
         print("\nStarting sensor polling (Press Ctrl+C to exit)...\n")
+        print(adc.channels)
         
         # Print header
         print("Time       | Fuel Level | RPM    | Battery | Temperature")
@@ -47,7 +48,7 @@ def main():
             sys.stdout.write('\033[4F')
             
             # Get all sensor readings
-            readings = adc.read_all()
+            #readings = adc.read_all()
             
             # Format current time
             current_time = datetime.now().strftime("%H:%M:%S")
@@ -61,7 +62,7 @@ def main():
                 f"{format_value('temperature', readings['temperature']):^11}"
             )
             
-            print(output)
+            #print(output)
             
             # Print raw voltages for debugging
             raw_values = {name: adc.read_raw(name) for name in adc.CHANNELS.keys()}

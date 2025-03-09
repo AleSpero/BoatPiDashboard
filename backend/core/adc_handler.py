@@ -7,11 +7,11 @@ import time
 
 class ADCHandler:
     # ADS1115 specifications
-    MAX_VOLTAGE = 4.096  # Maximum voltage of ADS1115
+    MAX_VOLTAGE = 5.240  # Maximum voltage of ADS1115
     
     # Conversion factors and calibration constants
     FUEL_LEVEL_FACTOR = 100.0 / MAX_VOLTAGE  # Convert to percentage
-    BATTERY_VOLTAGE_DIVIDER = 3.0  # Voltage divider ratio
+    BATTERY_VOLTAGE_DIVIDER = 2.44275  # Voltage divider ratio for 12.8V max input
     TEMPERATURE_FACTOR = 100.0  # Temperature conversion factor
     RPM_FACTOR = 1000.0  # RPM conversion factor
     
@@ -24,23 +24,44 @@ class ADCHandler:
     }
     
     def __init__(self):
-        # Initialize I2C bus
-        i2c = busio.I2C(board.SCL, board.SDA)
-        self.ads = ADS.ADS1115(i2c)
-        
-        # Create analog input objects for each channel
-        self.channels = {
-            name: AnalogIn(self.ads, getattr(ADS, f'P{channel}'))
-            for name, channel in self.CHANNELS.items()
-        }
-        
-        # Map conversion factors using class constants
-        self.conversion_factors = {
-            'fuel_level': self.FUEL_LEVEL_FACTOR,
-            'battery': self.BATTERY_VOLTAGE_DIVIDER,
-            'temperature': self.TEMPERATURE_FACTOR,
-            'rpm': self.RPM_FACTOR
-        }
+        print("Initializing ADC Handler...")
+        try:
+            # Initialize I2C bus
+            print("Setting up I2C bus...")
+            i2c = busio.I2C(board.SCL, board.SDA)
+            if not i2c.try_lock():
+                raise RuntimeError("Could not lock I2C bus")
+            print("I2C bus initialized successfully")
+            
+            # Initialize ADS1115
+            print("Initializing ADS1115...")
+            self.ads = ADS.ADS1115(i2c)
+            print("ADS1115 initialized successfully")
+            
+            # Create analog input objects for each channel
+            print("Setting up ADC channels...")
+            self.channels = {}
+            for name, channel in self.CHANNELS.items():
+                print(f"  Initializing channel {name} on A{channel}...")
+                self.channels[name] = AnalogIn(self.ads, getattr(ADS, f'P{channel}'))
+            print("All channels initialized successfully")
+            
+            # Map conversion factors using class constants
+            self.conversion_factors = {
+                'fuel_level': self.FUEL_LEVEL_FACTOR,
+                'battery': self.BATTERY_VOLTAGE_DIVIDER,
+                'temperature': self.TEMPERATURE_FACTOR,
+                'rpm': self.RPM_FACTOR
+            }
+            print("ADC Handler initialization complete")
+            
+        except Exception as e:
+            print(f"Error initializing ADC Handler: {str(e)}")
+            print("Make sure:")
+            print("1. The ADS1115 is properly connected to the I2C pins")
+            print("2. I2C is enabled on your device")
+            print("3. You have the required permissions to access I2C")
+            raise
 
     def read_raw(self, channel_name: str) -> Optional[float]:
         """Read raw voltage from specified channel."""
